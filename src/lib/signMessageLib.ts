@@ -14,17 +14,24 @@
  *   https://github.com/safe-global/safe-deployments
  */
 
-import { encodeFunctionData, getAddress, type Abi, type Address, type Hex } from 'viem'
-import { getSignMessageLibDeployment } from '@safe-global/safe-deployments'
+import { getSignMessageLibDeployment } from "@safe-global/safe-deployments";
+import {
+  type Abi,
+  type Address,
+  encodeFunctionData,
+  getAddress,
+  type Hex,
+} from "viem";
 
 // Versions to try, newest first. The Safe's own version is preferred (passed
 // in by the caller); these are the fallbacks if it isn't deployed on the chain.
-const FALLBACK_VERSIONS = ['1.4.1', '1.3.0', '1.5.0'] as const
+const FALLBACK_VERSIONS = ["1.4.1", "1.3.0", "1.5.0"] as const;
 
 // ABI sourced straight from the registry (version-stable). Cast to viem's Abi
 // since safe-deployments types it as `any[]`; this loosens the literal typing
 // on `encodeFunctionData` below, which is fine for the single call we make.
-const SIGN_MESSAGE_LIB_ABI = (getSignMessageLibDeployment({ version: '1.4.1' })?.abi ?? []) as Abi
+const SIGN_MESSAGE_LIB_ABI = (getSignMessageLibDeployment({ version: "1.4.1" })
+  ?.abi ?? []) as Abi;
 
 /**
  * Resolves the SignMessageLib address for a chain from safe-deployments,
@@ -35,14 +42,20 @@ const SIGN_MESSAGE_LIB_ABI = (getSignMessageLibDeployment({ version: '1.4.1' })?
  * @param safeVersion - The connected Safe's version, tried first (optional).
  * @returns The checksummed address, or `null` if the library isn't deployed on the chain.
  */
-export function getSignMessageLibAddress(chainId: number, safeVersion?: string | null): Address | null {
-  const network = String(chainId)
-  const versions = safeVersion ? [safeVersion, ...FALLBACK_VERSIONS] : [...FALLBACK_VERSIONS]
+export function getSignMessageLibAddress(
+  chainId: number,
+  safeVersion?: string | null,
+): Address | null {
+  const network = String(chainId);
+  const versions = safeVersion
+    ? [safeVersion, ...FALLBACK_VERSIONS]
+    : [...FALLBACK_VERSIONS];
   for (const version of versions) {
-    const address = getSignMessageLibDeployment({ version, network })?.networkAddresses[network]
-    if (address) return getAddress(address)
+    const address = getSignMessageLibDeployment({ version, network })
+      ?.networkAddresses[network];
+    if (address) return getAddress(address);
   }
-  return null
+  return null;
 }
 
 /**
@@ -62,7 +75,7 @@ export function getSignMessageLibAddress(chainId: number, safeVersion?: string |
 export function encodeSignMessageCall(innerHash: Hex): Hex {
   return encodeFunctionData({
     abi: SIGN_MESSAGE_LIB_ABI,
-    functionName: 'signMessage',
+    functionName: "signMessage",
     args: [innerHash],
-  })
+  });
 }

@@ -17,7 +17,7 @@
  * approximate support with version + fallback handler.
  */
 
-import { isAddress, zeroAddress } from 'viem'
+import { isAddress, zeroAddress } from "viem";
 
 /**
  * Minimal semver `>=` comparison for Safe version strings like "1.4.1" or
@@ -28,16 +28,16 @@ import { isAddress, zeroAddress } from 'viem'
  * @returns `true` if `version >= min`.
  */
 function gte(version: string, min: string): boolean {
-  const parse = (v: string) => v.split('.').map((p) => parseInt(p, 10) || 0)
-  const a = parse(version)
-  const b = parse(min)
+  const parse = (v: string) => v.split(".").map((p) => parseInt(p, 10) || 0);
+  const a = parse(version);
+  const b = parse(min);
   for (let i = 0; i < 3; i++) {
-    const x = a[i] ?? 0
-    const y = b[i] ?? 0
-    if (x > y) return true
-    if (x < y) return false
+    const x = a[i] ?? 0;
+    const y = b[i] ?? 0;
+    if (x > y) return true;
+    if (x < y) return false;
   }
-  return true
+  return true;
 }
 
 /**
@@ -53,16 +53,16 @@ export function isOffchainSigningSupported(
   version: string | null | undefined,
   fallbackHandler: string | null | undefined,
 ): boolean {
-  if (!version) return false
+  if (!version) return false;
 
   // From 1.3.0 on, EIP-1271 validation lives in the fallback handler, so one
   // must be set. Earlier versions implemented it on the singleton.
-  if (gte(version, '1.3.0')) {
+  if (gte(version, "1.3.0")) {
     return (
       !!fallbackHandler &&
       isAddress(fallbackHandler) &&
       fallbackHandler.toLowerCase() !== zeroAddress
-    )
+    );
   }
-  return gte(version, '1.0.0')
+  return gte(version, "1.0.0");
 }

@@ -23,13 +23,15 @@
  * actually took once the response comes back.
  */
 
-import { useMemo, useRef, useState } from "react";
 import {
+  type EIP712TypedData,
   isObjectEIP712TypedData,
   Methods,
   RPC_CALLS,
-  type EIP712TypedData,
 } from "@safe-global/safe-apps-sdk";
+import { useMemo, useRef, useState } from "react";
+import type { SafeAppContext } from "../hooks/useSafeAppsSdk";
+import { isOffchainSigningSupported } from "../lib/offchain";
 import {
   computeSafeMessageHash,
   generateSafeMessageMessage,
@@ -39,9 +41,7 @@ import {
   encodeSignMessageCall,
   getSignMessageLibAddress,
 } from "../lib/signMessageLib";
-import { isOffchainSigningSupported } from "../lib/offchain";
 import { Copyable } from "./Copyable";
-import type { SafeAppContext } from "../hooks/useSafeAppsSdk";
 
 type Mode = "text" | "typed";
 type Result =
@@ -265,6 +265,7 @@ export function SignMessage({ ctx }: { ctx: SafeAppContext }) {
 
       <div className="tabs" style={{ marginBottom: 16 }}>
         <button
+          type="button"
           className={`tab ${mode === "text" ? "active" : ""}`}
           onClick={() => {
             setMode("text");
@@ -274,6 +275,7 @@ export function SignMessage({ ctx }: { ctx: SafeAppContext }) {
           Plain text (EIP-191)
         </button>
         <button
+          type="button"
           className={`tab ${mode === "typed" ? "active" : ""}`}
           onClick={() => {
             setMode("typed");
@@ -315,6 +317,7 @@ export function SignMessage({ ctx }: { ctx: SafeAppContext }) {
           />
           <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
             <button
+              type="button"
               className="secondary"
               onClick={loadExample}
               disabled={!safe}
@@ -378,11 +381,16 @@ export function SignMessage({ ctx }: { ctx: SafeAppContext }) {
           flexWrap: "wrap",
         }}
       >
-        <button className="primary" onClick={onSign} disabled={!canSubmit}>
+        <button
+          type="button"
+          className="primary"
+          onClick={onSign}
+          disabled={!canSubmit}
+        >
           {submitting ? "Awaiting Safe Wallet…" : "Sign message"}
         </button>
         {submitting && (
-          <button className="secondary" onClick={stopWaiting}>
+          <button type="button" className="secondary" onClick={stopWaiting}>
             Cancel
           </button>
         )}

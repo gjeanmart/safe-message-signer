@@ -1,13 +1,13 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import path from 'node:path'
+import path from "node:path";
+import react from "@vitejs/plugin-react";
+import { defineConfig } from "vite";
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
+      "@": path.resolve(__dirname, "./src"),
     },
   },
   server: {
@@ -18,10 +18,10 @@ export default defineConfig({
     // loads the app from localhost directly, so only localhost is allowed. If
     // you tunnel the dev server (e.g. ngrok) to test inside the Wallet, add the
     // tunnel host here — dev-only.
-    allowedHosts: ['localhost'],
+    allowedHosts: ["localhost"],
     // Safe App iframe embedding requires permissive headers in dev
     headers: {
-      'Access-Control-Allow-Origin': '*',
+      "Access-Control-Allow-Origin": "*",
     },
   },
-})
+});

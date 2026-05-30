@@ -1,5 +1,5 @@
-import { useSafeAppsSdk } from "./hooks/useSafeAppsSdk";
 import { SignMessage } from "./components/SignMessage";
+import { useSafeAppsSdk } from "./hooks/useSafeAppsSdk";
 
 /**
  * Top-level shell: runs the Safe Apps SDK handshake and renders the connecting
