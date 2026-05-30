@@ -32,6 +32,12 @@ export function App() {
         Wallet's signing-method setting decides which.
       </p>
 
+      <div className="callout" role="note">
+        ⚠️ <strong>Beta — unaudited.</strong> This is experimental software and
+        has not been security audited. Always verify what you sign; use it at
+        your own risk.
+      </div>
+
       {ctx.isLoading && (
         <div className="callout">Connecting to Safe Wallet…</div>
       )}
