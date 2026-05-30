@@ -177,11 +177,13 @@ Deploy-time security headers ship in [`public/_headers`](public/_headers) (see [
 
 ## Deployment
 
-**Cloudflare Pages**, via Cloudflare's GitHub integration: every push to `main` triggers a production build (`yarn build` → `dist/`) and deploy. Live at **<https://safe-message-signer.ethdevelopers.com>**.
+**Cloudflare Workers (static assets)**, via Cloudflare's GitHub integration: every push to `main` builds (`yarn build` → `dist/`) and runs `wrangler deploy`, serving `dist/` as static assets. Live at **<https://safe-message-signer.ethdevelopers.com>**.
+
+Deploy config is version-controlled in [`wrangler.jsonc`](wrangler.jsonc): name, compatibility date, and `assets` (directory `./dist`, SPA `not_found_handling`). Deliberately **no** `@cloudflare/vite-plugin` or `wrangler` dependency — this is a plain static SPA with no Worker code, and CF's build environment supplies `wrangler`.
 
 [`public/_headers`](public/_headers) supplies `Access-Control-Allow-Origin: *` on the manifest (the Wallet fetches it cross-origin) plus hardening headers — `X-Content-Type-Options`, `Referrer-Policy`, and a CSP `frame-ancestors` allowing `https://*.safe.global` so only the Safe{Wallet} can embed the app.
 
-Pages build settings: build command `yarn build`, output directory `dist`, production branch `main`, env `NODE_VERSION=20`. Yarn 4 is picked up automatically from the `packageManager` field via Corepack.
+Build settings (CF dashboard): build command `yarn build`, deploy command `wrangler deploy`, env `NODE_VERSION=20`. Vite ≥6 is required for CF's wrangler autoconfig; Yarn 4 is picked up from the `packageManager` field via Corepack.
 
 ## References
 

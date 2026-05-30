@@ -7,3 +7,7 @@ dist-ssr
 .DS_Store
 .vite
 .yarn
+
+# wrangler
+.wrangler
+.dev.vars*
