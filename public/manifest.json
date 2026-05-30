@@ -1,0 +1,5 @@
+{
+  "name": "Safe Message Signer",
+  "description": "Sign arbitrary messages with your Safe (EIP-1271, off-chain or on-chain via SignMessageLib)",
+  "iconPath": "icon.svg"
+}
