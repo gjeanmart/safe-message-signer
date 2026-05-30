@@ -32,7 +32,7 @@ This app provides a UI for that flow through the Safe Apps SDK — and, along th
 
 ## What it does
 
-**One message, one Sign button — the Wallet decides off-chain vs on-chain.** A single input (plain text → EIP-191, or EIP-712 typed data with a "Load example" seed) maps to **one canonical SafeMessage hash**, previewed live (inner hash + SafeMessage hash, verified to match the reference `5afe/eip-1271-dapp` ethers implementation). Pressing **Sign message** calls `sdk.txs.signMessage` / `signTypedMessage`; the Wallet then routes it:
+**One message, one Sign button — the Wallet decides off-chain vs on-chain.** A single input (plain text → EIP-191, or EIP-712 typed data with a "Load example" seed) maps to **one canonical SafeMessage hash**, previewed live (inner hash + SafeMessage hash, verified to match the reference `5afe/eip-1271-dapp` ethers implementation). Pasted EIP-712 typed data is **validated structurally before signing** — `primaryType` resolution, referenced types, and each value against its declared Solidity type — with specific, path-qualified errors (e.g. `from.wallet: is not a valid address.`) instead of a blank preview. Pressing **Sign message** calls `sdk.txs.signMessage` / `signTypedMessage`; the Wallet then routes it:
 
 - **Off-chain** → an EIP-1271 SafeMessage via the tx-service `/messages/` endpoint.
 - **On-chain** → a `SignMessageLib` delegatecall transaction (replay protection from the Safe nonce).
@@ -69,6 +69,7 @@ yarn dev          # http://localhost:3000
 yarn lint         # Biome: lint + format check (no writes)
 yarn lint:fix     # apply safe lint fixes + format
 yarn format       # format only
+yarn test         # run unit tests (Vitest)
 ```
 
 Then in the Safe Wallet UI:
@@ -103,6 +104,8 @@ src/
     safeMessage.ts      ← EIP-191/EIP-712 inner hash + SafeMessage hash (viem)
     signMessageLib.ts   ← SignMessageLib address + ABI from safe-deployments; encodeSignMessageCall
     offchain.ts         ← isOffchainSigningSupported (mirrors the Wallet's capability gate)
+    eip712.ts           ← structural validation of pasted EIP-712 typed data
+    eip712.test.ts      ← Vitest unit tests for the validator
 ```
 
 See [CLAUDE.md](CLAUDE.md) for conventions, the signing model, and the findings that shaped the design.

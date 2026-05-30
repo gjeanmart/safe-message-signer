@@ -34,6 +34,8 @@ yarn tsc --noEmit   # typecheck only
 yarn lint           # Biome: lint + format check (no writes)
 yarn lint:fix       # apply safe lint fixes + format
 yarn format         # format only
+yarn test           # run unit tests once (Vitest)
+yarn test:watch     # Vitest in watch mode
 ```
 
 There is **no test suite** (see "Practices not applied"). After any change to signing/hashing, run `yarn tsc --noEmit && yarn build` and, ideally, sign once inside a real Safe. Run `yarn lint` before pushing — CI enforces Biome (the `lint` job runs `biome ci`).
@@ -73,6 +75,8 @@ src/
     safeMessage.ts          EIP-191/EIP-712 inner hash + SafeMessage envelope hash (viem)
     signMessageLib.ts       SignMessageLib address + ABI from safe-deployments; encodeSignMessageCall
     offchain.ts             isOffchainSigningSupported (client mirror of the Wallet's gate 1)
+    eip712.ts               structural validation of pasted EIP-712 typed data (validateTypedData)
+    eip712.test.ts          Vitest unit tests for the validator
 ```
 
 Hashing is split deliberately: `safeMessage.ts` owns *what gets hashed* (off-chain semantics, verified against `5afe/eip-1271-dapp`), `signMessageLib.ts` owns *the on-chain call* and consumes the inner hash from `safeMessage.ts`. Both paths therefore target the same SafeMessage hash.
@@ -88,10 +92,11 @@ Hashing is split deliberately: `safeMessage.ts` owns *what gets hashed* (off-cha
 - **Localize and comment SDK casts.** The public Safe Apps SDK types are incomplete; where we reach past them (the dropped `operation` field, `sdk.communicator` access for `safe_setSettings`), the cast is narrow and commented with why. Don't spread `any`.
 - **CSS** is a single `styles.css` with plain classes (`.card`, `.kv`, `.callout`, `.copyable`). No CSS-in-JS lib; inline `style` only for one-off layout.
 - **File references in prose/PRs** use clickable relative paths.
+- **Tests** live next to the code as `*.test.ts` and use Vitest with explicit `import { describe, it, expect } from "vitest"` (no globals). Test pure `lib` logic; run `yarn test` before pushing (CI's `test` job runs it). When a test exposes a design wart (e.g. noisy issue paths), fix the code, not the assertion.
 
 ## Practices deliberately NOT applied (and why)
 
-- **No automated tests.** It's an experiment prototype; the one thing worth testing—the hashing—was validated by cross-checking against the reference `eip-1271-dapp` ethers implementation (see git history / README). If this graduates to a shipped app, add `vitest` unit tests for `safeMessage.ts` and `offchain.ts` first.
+- **Limited tests (Vitest).** `eip712.ts` (typed-data validation) has unit tests; the rest of `lib` does not yet. The hashing in `safeMessage.ts` was validated by cross-checking against the reference `eip-1271-dapp` ethers implementation (see git history / README) rather than unit tests — add `safeMessage.ts` / `offchain.ts` tests next if this hardens further. No component/E2E tests (no jsdom).
 - **No code-splitting / lazy loading.** `safe-deployments` bundles all contracts × ~394 networks (~35 KB gzip overhead). Accepted for simplicity; the lean alternative is deep-importing just the SignMessageLib asset JSON. Revisit only if bundle size becomes a real concern.
 - **No router / state library.** Single screen, local `useState`. Adding either would be over-engineering.
 - **No error boundary.** Errors surface in the result callout; a top-level boundary isn't worth it at this size.
@@ -139,6 +144,8 @@ Why the app looks the way it does — the questions explored and the choices mad
 14. **Adopted Biome (lint + format), wired into CI.** Chose Biome over ESLint + Prettier: one dependency with platform binaries as optional deps (no install scripts — fits `enableScripts: false`), one config, no plugin sprawl. Formatter tuned to the existing style (2-space, double quotes, 80 cols). Fixed the findings instead of disabling rules: explicit `type="button"` on all buttons (a11y), a null-check replacing the `#root` non-null assertion, and a documented single-line `biome-ignore` for the run-once handshake effect's exhaustive-deps (the stale `eslint-disable` it replaced was dead — we never ran ESLint). CI gained a `lint` job running `biome ci`.
 
 15. **Correction to #13 — it's Cloudflare *Workers* (static assets), not Pages; committed a lean `wrangler.jsonc`.** CF's "import a Vite repo" flow created a *Workers* project that deploys via `wrangler deploy` (not Pages). That auto-config refused Vite < 6, which is why we bumped Vite to 6. Cloudflare's bot then opened a PR (autoconfig) adding `@cloudflare/vite-plugin` + `wrangler` + a `wrangler.jsonc` — declined it: that plugin is for full-stack Workers and pulls in `workerd`/`miniflare`, against this repo's minimal-deps stance, and risks the `enableScripts: false` install. Instead committed a minimal `wrangler.jsonc` (`name`, `compatibility_date`, `assets.directory: ./dist`, SPA `not_found_handling`) — no new deps; CF's build env provides `wrangler`. `_headers` still applies (Workers static assets honours it). Also **re-enabled PR preview deployments** (reversing #13's "main only") so each PR gets a Cloudflare preview URL + the "Deploying with Cloudflare Workers" status comment.
+
+16. **Structural EIP-712 validation + first tests (Vitest), wired into CI.** Added `eip712.ts::validateTypedData`: resolves `primaryType`, checks referenced types exist, and validates every message value against its declared Solidity type (address/uintN/intN/bytesN/bytes/bool/string), recursing into structs and arrays. `SignMessage.tsx` runs it on the pasted typed data and shows path-qualified errors, only exposing the data for signing when valid. Reuses `inferPrimaryType` from `safeMessage.ts` (now exported) so validation and hashing agree on the root type. Introduced **Vitest** (the long-noted "if it graduates" choice) with `eip712.test.ts`, a `test` CI job, and `test`/`test:watch` scripts. Writing the tests caught a UX wart — issue paths were prefixed with the primaryType name (`Mail.from.wallet`); fixed the validator to use a message-relative root (`from.wallet`).
 
 ### Background discussion (not yet built)
 

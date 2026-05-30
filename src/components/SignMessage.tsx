@@ -31,6 +31,7 @@ import {
 } from "@safe-global/safe-apps-sdk";
 import { useMemo, useRef, useState } from "react";
 import type { SafeAppContext } from "../hooks/useSafeAppsSdk";
+import { type EIP712Issue, validateTypedData } from "../lib/eip712";
 import { isOffchainSigningSupported } from "../lib/offchain";
 import {
   computeSafeMessageHash,
@@ -47,6 +48,11 @@ type Mode = "text" | "typed";
 type Result =
   | { kind: "offchain"; messageHash: string }
   | { kind: "onchain"; safeTxHash: string };
+
+/** Renders an EIP-712 validation issue as `path: message` (or just the message). */
+function formatIssue(issue: EIP712Issue): string {
+  return issue.path ? `${issue.path}: ${issue.message}` : issue.message;
+}
 
 /**
  * Pins the per-app `offChainSigning` setting to true (gate 3) so the Wallet's
@@ -102,25 +108,33 @@ export function SignMessage({ ctx }: { ctx: SafeAppContext }) {
     if (mode !== "typed" || !typedJson.trim()) {
       return {
         data: null as EIP712TypedData | null,
-        parseError: null as string | null,
+        errors: [] as EIP712Issue[],
       };
     }
+    let parsed: unknown;
     try {
-      const parsed = JSON.parse(typedJson);
-      if (!isObjectEIP712TypedData(parsed)) {
-        return {
-          data: null,
-          parseError:
-            "Not a valid EIP-712 object (needs domain, types, message).",
-        };
-      }
-      return { data: parsed, parseError: null };
+      parsed = JSON.parse(typedJson);
     } catch (e) {
+      const message = e instanceof Error ? e.message : "Invalid JSON.";
+      return { data: null, errors: [{ path: "", message }] };
+    }
+    if (!isObjectEIP712TypedData(parsed)) {
       return {
         data: null,
-        parseError: e instanceof Error ? e.message : "Invalid JSON.",
+        errors: [
+          {
+            path: "",
+            message:
+              "Not a valid EIP-712 object (needs domain, types, message).",
+          },
+        ],
       };
     }
+    // Deep structural validation: primaryType resolves, referenced types exist,
+    // and every message value fits its declared Solidity type. Only expose the
+    // data for signing when it is fully valid.
+    const errors = validateTypedData(parsed);
+    return { data: errors.length === 0 ? parsed : null, errors };
   }, [mode, typedJson]);
 
   const payload: string | EIP712TypedData | null =
@@ -325,9 +339,22 @@ export function SignMessage({ ctx }: { ctx: SafeAppContext }) {
               Load example
             </button>
           </div>
-          {typed.parseError && (
+          {typed.errors.length > 0 && (
             <div className="callout error" style={{ marginTop: 8 }}>
-              {typed.parseError}
+              {typed.errors.length === 1 ? (
+                formatIssue(typed.errors[0])
+              ) : (
+                <>
+                  <strong>{typed.errors.length} issues found:</strong>
+                  <ul style={{ margin: "6px 0 0", paddingLeft: 18 }}>
+                    {typed.errors.map((issue) => (
+                      <li key={`${issue.path}:${issue.message}`}>
+                        {formatIssue(issue)}
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
             </div>
           )}
         </div>
