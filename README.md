@@ -2,7 +2,7 @@
 
 A **Safe App** (runs inside the Safe{Wallet} UI) for signing arbitrary messages from a Safe — one message, signed either **off-chain** (EIP-1271 SafeMessage) or **on-chain** (`SignMessageLib`), with the Wallet deciding which.
 
-Built to investigate the SignMessageLib UX gap from [safe-wallet-monorepo#3406](https://github.com/safe-global/safe-wallet-monorepo/issues/3406). The investigation produced a more nuanced picture than "the Transaction Builder can't do delegatecalls": on-chain _message_ signing already works through the Wallet, while _arbitrary_ delegatecall proposing is what's genuinely blocked at the SDK layer. See [What it does](#what-it-does) for the findings, and [CLAUDE.md](CLAUDE.md) for the working model.
+Built to investigate the SignMessageLib UX gap for signing arbitrary messages on-chain from a Safe. The investigation produced a more nuanced picture than "the Transaction Builder can't do delegatecalls": on-chain _message_ signing already works through the Wallet, while _arbitrary_ delegatecall proposing is what's genuinely blocked at the SDK layer. See [What it does](#what-it-does) for the findings, and [CLAUDE.md](CLAUDE.md) for the working model.
 
 ## Why this exists
 
@@ -45,7 +45,7 @@ The choice is the **Wallet's**, gated by three ANDed conditions (in safe-wallet-
 
 So the app doesn't pretend to choose the path. It **explains the rule, points at the setting, forces gate (3), surfaces gate (1)**, and reports the actual outcome after signing. Change the path by flipping the Settings toggle.
 
-> **Aside — the #3406 finding.** Proposing the SignMessageLib delegatecall _directly_ (`sdk.txs.send({ operation: 1 })`) does **not** work: the Apps SDK send format is `{ to, value, data }` only (the `BaseTransaction` type in `@safe-global/safe-apps-sdk`), so `operation` is dropped, the Wallet proposes a CALL, and SignMessageLib reverts (confirmed on Sepolia). That's the genuine [#3406](https://github.com/safe-global/safe-wallet-monorepo/issues/3406) gap — but it only blocks _arbitrary_ delegatecalls. On-chain _message_ signing already works through `signMessage` routing (above), because the Wallet builds that delegatecall privileged-side. The "On-chain transaction details" disclosure in the UI shows the exact calldata the Wallet uses.
+> **Aside — the SDK delegatecall finding.** Proposing the SignMessageLib delegatecall _directly_ (`sdk.txs.send({ operation: 1 })`) does **not** work: the Apps SDK send format is `{ to, value, data }` only (the `BaseTransaction` type in `@safe-global/safe-apps-sdk`), so `operation` is dropped, the Wallet proposes a CALL, and SignMessageLib reverts (confirmed on Sepolia). That's the genuine SDK gap — but it only blocks _arbitrary_ delegatecalls. On-chain _message_ signing already works through `signMessage` routing (above), because the Wallet builds that delegatecall privileged-side. The "On-chain transaction details" disclosure in the UI shows the exact calldata the Wallet uses.
 
 ## Stack
 
@@ -76,7 +76,7 @@ The SDK handshake auto-detects the parent Safe Wallet and surfaces the connected
 
 ```
 index.html
-vite.config.ts          ← dev server: port 3000, host:true, CORS + ngrok allowedHosts
+vite.config.ts          ← dev server: port 3000, host:true, CORS + localhost allowedHosts
 tsconfig.json
 package.json
 public/
@@ -142,15 +142,15 @@ console.log(result === MAGIC_VALUE); // true
 - [x] Copy-to-clipboard for hashes / target / calldata
 - [x] Recovery from the Wallet's hung on-chain cancel (sequence token + Cancel button)
 - [x] Verified on Sepolia (off-chain and on-chain routing)
-- [ ] Demo recording / screenshots for #3406
+- [ ] Demo recording / screenshots
 
 ## Out of scope for v0 (later)
 
 - In-app verification step (read `isValidSignature` after execution) — the SDK's `isMessageHashSigned` could drive this
 
-## Findings to file (follow-ups to #3406)
+## Findings to file (upstream follow-ups)
 
-- **Apps SDK `BaseTransaction` should expose `operation`** (and the Wallet's `sendTransactions` handler honour it). Without it, no third-party Safe App can propose a delegatecall — so SignMessageLib can only be reached via the Wallet's internal `signMessage` routing, not a hand-built tx. This is the real #3406 gap.
+- **Apps SDK `BaseTransaction` should expose `operation`** (and the Wallet's `sendTransactions` handler honour it). Without it, no third-party Safe App can propose a delegatecall — so SignMessageLib can only be reached via the Wallet's internal `signMessage` routing, not a hand-built tx. This is the real SDK gap.
 - **`SignMessageOnChainFlow` should pass an `onClose` that rejects the SDK request**, like `SafeAppsTxFlow` and `SignMessageFlow` do. Today cancelling the on-chain message dialog sends nothing back, so the SDK promise hangs (the app works around this with a manual Cancel).
 - **Consider exposing the signing-method setting (gate 2) to Safe Apps** (read and/or set), so an app can show or choose the path instead of only reporting it after the fact.
 
@@ -165,15 +165,18 @@ Hardened per the company JS/TS supply-chain RFC (Yarn v4 path):
 - **Dependabot** ([`.github/dependabot.yml`](.github/dependabot.yml)) updates npm + actions weekly, with a 7-day cooldown aligned to the age gate.
 - No secrets in the repo (`.env` is gitignored; the app holds no keys).
 
-To apply after the first push: enable **branch protection on `main`** with required PR review, and add deploy-time security headers (see below).
+Deploy-time security headers ship in [`public/_headers`](public/_headers) (see [Deployment](#deployment)). Still to apply: enable **branch protection on `main`** with required PR review.
 
 ## Deployment
 
-Target: **Cloudflare Pages**, deployed via GitHub Actions. Build command `yarn build`, output `dist/`. A `public/_headers` file supplies the required `Access-Control-Allow-Origin: *` on the manifest plus hardening headers (`X-Content-Type-Options`, `Referrer-Policy`, and a CSP whose `frame-ancestors` must allow `https://*.safe.global` so the Wallet can embed the app). _(Deploy workflow + headers to be added.)_
+**Cloudflare Pages**, via Cloudflare's GitHub integration: every push to `main` triggers a production build (`yarn build` → `dist/`) and deploy. Live at **<https://safe-message-signer.ethdevelopers.com>**.
+
+[`public/_headers`](public/_headers) supplies `Access-Control-Allow-Origin: *` on the manifest (the Wallet fetches it cross-origin) plus hardening headers — `X-Content-Type-Options`, `Referrer-Policy`, and a CSP `frame-ancestors` allowing `https://*.safe.global` so only the Safe{Wallet} can embed the app.
+
+Pages build settings: build command `yarn build`, output directory `dist`, production branch `main`, env `NODE_VERSION=20`. Yarn 4 is picked up automatically from the `packageManager` field via Corepack.
 
 ## References
 
-- [safe-wallet-monorepo#3406](https://github.com/safe-global/safe-wallet-monorepo/issues/3406)
 - [SignMessageLib v1.4.1 deployments](https://github.com/safe-global/safe-deployments/blob/main/src/assets/v1.4.1/sign_message_lib.json)
 - [CompatibilityFallbackHandler](https://github.com/safe-fndn/safe-smart-account/blob/v1.4.1/contracts/handler/CompatibilityFallbackHandler.sol#L28-L39)
 - [@safe-global/safe-apps-sdk docs](https://www.npmjs.com/package/@safe-global/safe-apps-sdk)

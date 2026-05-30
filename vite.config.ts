@@ -12,12 +12,13 @@ export default defineConfig({
   },
   server: {
     port: 3000,
-    // Listen on all interfaces so a tunnel (ngrok) can reach the dev server.
+    // Listen on all interfaces (lets a tunnel reach the dev server if needed).
     host: true,
-    // Vite 5 rejects requests whose Host header it doesn't recognise. ngrok
-    // forwards its own *.ngrok-free.app / *.ngrok.app host, so allow it
-    // through (along with localhost) — this is dev-only.
-    allowedHosts: ['.ngrok-free.dev', '.ngrok-free.app', '.ngrok.app', '.ngrok.io', 'localhost'],
+    // Vite rejects requests whose Host header it doesn't recognise. The Wallet
+    // loads the app from localhost directly, so only localhost is allowed. If
+    // you tunnel the dev server (e.g. ngrok) to test inside the Wallet, add the
+    // tunnel host here — dev-only.
+    allowedHosts: ['localhost'],
     // Safe App iframe embedding requires permissive headers in dev
     headers: {
       'Access-Control-Allow-Origin': '*',

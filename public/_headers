@@ -1,0 +1,15 @@
+# Cloudflare Pages — HTTP response headers
+# Docs: https://developers.cloudflare.com/pages/configuration/headers/
+
+# The Safe{Wallet} fetches the app manifest cross-origin to read its metadata,
+# so it must be CORS-readable from any origin.
+/manifest.json
+  Access-Control-Allow-Origin: *
+
+# Everything else: security hardening. frame-ancestors is the directive that
+# matters for a Safe App — the app must be embeddable inside the Safe{Wallet}
+# iframe (*.safe.global) and refused everywhere else.
+/*
+  Content-Security-Policy: frame-ancestors 'self' https://*.safe.global
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin

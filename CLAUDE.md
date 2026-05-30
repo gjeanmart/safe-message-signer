@@ -9,7 +9,7 @@ Guidance for working in this repo.
 - New/changed/removed file or dependency → update the file tree + Stack.
 - New design decision or a reversal of an old one → add an entry to the [Decision & discussion log](#decision--discussion-log) below, with the *why*.
 - New protocol finding or constraint → add it to "Findings that constrain the design" and, if user-facing, to README.
-- Reversed/obsolete guidance → delete it; don't leave stale claims (the README has drifted before — e.g. "tabs", an `app/` root, "closes #3406" — don't let it).
+- Reversed/obsolete guidance → delete it; don't leave stale claims (the README has drifted before — e.g. "tabs", an `app/` root — don't let it).
 
 The Decision & discussion log is the memory of *why* the app looks the way it does — the questions asked, what we found, and what we chose. Append to it; treat it as append-mostly history.
 
@@ -22,7 +22,7 @@ A **Safe App** (loaded inside the Safe{Wallet} UI iframe, via `@safe-global/safe
 
 The user does **not** pick the path in this app — the Wallet decides (see "The signing model" below). The app's job is to build the right hashes/calldata, trigger signing, explain what the Wallet will do, and report the outcome.
 
-It started as an experiment to close the SignMessageLib UX gap from [safe-wallet-monorepo#3406](https://github.com/safe-global/safe-wallet-monorepo/issues/3406). Investigating that gap produced several findings (documented below and in file headers) that reshaped the app — read those before changing signing logic.
+It started as an experiment to close the SignMessageLib UX gap for on-chain message signing from a Safe. Investigating that gap produced several findings (documented below and in file headers) that reshaped the app — read those before changing signing logic.
 
 ## Commands
 
@@ -37,7 +37,7 @@ There is **no test suite** (see "Practices not applied"). After any change to si
 
 ### Running inside the Wallet
 
-The app must run inside the Safe{Wallet} iframe to do anything. Locally: `yarn dev`, expose via ngrok (`ngrok http 3000`), then in app.safe.global → Apps → My custom apps → add the URL. The manifest must be served with permissive CORS (configured in `vite.config.ts`). `allowedHosts` in `vite.config.ts` lists the ngrok TLDs.
+The app must run inside the Safe{Wallet} iframe to do anything. Locally: `yarn dev`, then in app.safe.global → Apps → My custom apps → add `http://localhost:3000` (your browser reaches it directly). The manifest must be served with permissive CORS (configured in `vite.config.ts`). To test from another device or a public URL, tunnel the dev server (e.g. `ngrok http 3000`) and add the tunnel host to `allowedHosts` in `vite.config.ts`.
 
 ## The signing model (read this before touching SignMessage.tsx)
 
@@ -51,7 +51,7 @@ Consequence: the app **cannot guarantee or pre-display** the path. It explains t
 
 ### Findings that constrain the design (don't regress these)
 
-- **`sdk.txs.send({ operation: 1 })` cannot propose a delegatecall.** The SDK send wire format is `{ to, value, data }` only — `operation` is dropped, the Wallet proposes a CALL, SignMessageLib reverts. This is #3406 at the SDK layer. So on-chain signing is reached *only* through `signMessage` routing, not a hand-built tx.
+- **`sdk.txs.send({ operation: 1 })` cannot propose a delegatecall.** The SDK send wire format is `{ to, value, data }` only — `operation` is dropped, the Wallet proposes a CALL, SignMessageLib reverts. This is the gap at the SDK layer. So on-chain signing is reached *only* through `signMessage` routing, not a hand-built tx.
 - **On-chain `signMessage` must be fed the EIP-191/EIP-712 inner hash**, not the raw message — matching the Wallet's own `ReviewSignMessageOnChain.tsx`. This is why `encodeSignMessageCall` takes `innerHash`. Feeding raw bytes produces a different, non-interoperable SafeMessage hash.
 - **The Wallet's on-chain message dialog doesn't notify the app on cancel** (`SignMessageOnChainFlow` is opened without an `onClose`), so the SDK promise hangs. `SignMessage.tsx` handles this with a sequence-token + manual "Cancel" button; keep that recovery path.
 
@@ -80,7 +80,7 @@ Hashing is split deliberately: `safeMessage.ts` owns *what gets hashed* (off-cha
 - **TypeScript strict** (`tsconfig.json`). `noUnusedLocals` is off intentionally (keeps WIP edits frictionless), so the IDE hints—not the build—catch dead code; clean it up anyway.
 - **viem for everything eth** — hashing (`hashMessage`, `hashTypedData`), ABI encoding (`encodeFunctionData`), address utils (`getAddress`, `isAddress`, `zeroAddress`). Do not add ethers.
 - **No hardcoded addresses or ABIs.** SignMessageLib address *and* ABI come from `@safe-global/safe-deployments`, keyed by chain id and Safe version. If you need another Safe contract, get it from there too.
-- **Document the "why" inline.** This codebase carries protocol findings in file headers and comments (the gates, #3406, hashing rules). When you discover or rely on a non-obvious protocol detail, write it down next to the code, with a source pointer (repo + file).
+- **Document the "why" inline.** This codebase carries protocol findings in file headers and comments (the gates, the SDK delegatecall gap, hashing rules). When you discover or rely on a non-obvious protocol detail, write it down next to the code, with a source pointer (repo + file).
 - **Localize and comment SDK casts.** The public Safe Apps SDK types are incomplete; where we reach past them (the dropped `operation` field, `sdk.communicator` access for `safe_setSettings`), the cast is narrow and commented with why. Don't spread `any`.
 - **CSS** is a single `styles.css` with plain classes (`.card`, `.kv`, `.callout`, `.copyable`). No CSS-in-JS lib; inline `style` only for one-off layout.
 - **File references in prose/PRs** use clickable relative paths.
@@ -108,13 +108,13 @@ Why the app looks the way it does — the questions explored and the choices mad
 
 1. **Proper Safe App, not a WalletConnect dApp.** The pain (and the audience) lives inside the Safe{Wallet} UI, so the app loads in the Wallet iframe via `safe-apps-sdk` rather than connecting externally like `5afe/eip-1271-dapp`.
 
-2. **Tried to propose the SignMessageLib delegatecall directly — it doesn't work.** `sdk.txs.send({ operation: 1 })` was downgraded to a CALL on a live Sepolia Safe (Operation 0, reverting simulation). Root cause: the SDK send wire format is `{ to, value, data }` only; `operation` is dropped. This is #3406 at the SDK layer. Kept as a documented finding, not a shipped feature.
+2. **Tried to propose the SignMessageLib delegatecall directly — it doesn't work.** `sdk.txs.send({ operation: 1 })` was downgraded to a CALL on a live Sepolia Safe (Operation 0, reverting simulation). Root cause: the SDK send wire format is `{ to, value, data }` only; `operation` is dropped. This is the gap at the SDK layer. Kept as a documented finding, not a shipped feature.
 
 3. **Added EIP-712 typed-data input** alongside plain text, wired to `signTypedMessage`. While doing so, found the off-chain preview was hashing wrong — fixed the hashing to EIP-191 for text / EIP-712 digest for typed data, and **cross-checked all four hashes against `5afe/eip-1271-dapp`'s ethers implementation** (exact match). Hashing lives in `safeMessage.ts`.
 
 4. **Discovered the Wallet auto-routes `signMessage` off-chain vs on-chain.** Two screenshots showed the same call producing an off-chain "Confirm message" on one Safe and an on-chain SignMessageLib tx on another. Traced to the three gates in `useCustomAppCommunicator.tsx` (capability / global `onChainSigning` toggle / per-app `offChainSigning`). Reframing: on-chain *message* signing already works via the Wallet; only *arbitrary* delegatecall proposing is blocked.
 
-5. **Collapsed the two-tab (off-chain / on-chain) UI into one "Sign message" button.** Rationale from discussion: the app can't actually choose the path (gate 2 is invisible) and the manual on-chain button never worked (#3406). So instead of two misleading controls, use one action, explain that the Wallet's *Settings → Safe Apps → Signing method* toggle decides, force gate 3 to true, surface gate 1, and report the actual outcome. This is the current design.
+5. **Collapsed the two-tab (off-chain / on-chain) UI into one "Sign message" button.** Rationale from discussion: the app can't actually choose the path (gate 2 is invisible) and the manual on-chain button never worked (the SDK delegatecall gap). So instead of two misleading controls, use one action, explain that the Wallet's *Settings → Safe Apps → Signing method* toggle decides, force gate 3 to true, surface gate 1, and report the actual outcome. This is the current design.
 
 6. **"Off-chain must not silently become on-chain."** Can't fully guarantee it (gate 2 is the user's invisible global setting), but: detect gate 1 (`offchain.ts`) and tell the user when off-chain is impossible, and force gate 3 via `safe_setSettings`. Documented the residual gate-2 caveat in the UI.
 
@@ -129,6 +129,8 @@ Why the app looks the way it does — the questions explored and the choices mad
 11. **Dropped all TTL/TOTP language.** The tx-service time-window applies only to delegate/proposer management, not message signing — so it's irrelevant here and was removed from the docs to avoid confusion.
 
 12. **Supply-chain hardening (per the company JS/TS RFC, Yarn v4 path).** `.yarnrc.yml`: `enableScripts: false` (only `esbuild` allowlisted via package.json `dependenciesMeta` — it's the sole dep with an install script), `enableHardenedMode: true`, `npmMinimalAgeGate: 10080`. Added CI (`yarn install --immutable` → typecheck → build), CodeQL, and OpenSSF Scorecard workflows — **all GitHub Actions pinned to commit SHAs**, least-privilege `permissions`. Added Dependabot (npm + actions, 7-day cooldown), MIT `LICENSE`, and `engines`. Removed the unused `@safe-global/safe-apps-provider` dependency (smaller attack surface). Branch protection on `main` is to be enabled after the first push.
+
+13. **Deploy via Cloudflare Pages' GitHub integration, not GitHub Actions.** Push to `main` → CF builds (`yarn build` → `dist/`) and deploys to `safe-message-signer.ethdevelopers.com`. Chose the native Git integration over a `wrangler` Actions workflow for simplicity: no `CLOUDFLARE_*` secrets in the repo, and CF still honours the `.yarnrc.yml` hardening since it runs the in-repo Yarn. Production/`main` only — PR previews intentionally off. HTTP headers (manifest CORS + `frame-ancestors https://*.safe.global` + hardening) live in [`public/_headers`](public/_headers); CF Pages reads that file. Build config (command/output/branch/`NODE_VERSION`) is set in the Pages dashboard, not in-repo.
 
 ### Background discussion (not yet built)
 
