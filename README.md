@@ -57,6 +57,7 @@ So the app doesn't pretend to choose the path. It **explains the rule, points at
 - `@safe-global/safe-apps-sdk` for the Wallet handshake and signing requests
 - `@safe-global/safe-deployments` for per-chain SignMessageLib address resolution (no hardcoded addresses / chain-id lists)
 - `viem` for ABI encoding, hashing, and address utilities
+- **Biome** for linting + formatting — one toolchain, no plugin sprawl (config in [`biome.json`](biome.json))
 
 > Note: `safe-deployments` bundles every contract across ~394 networks, which adds ~35 KB gzip to the bundle (~65 → ~101 KB gzip total). Acceptable for a Safe App; if bundle size mattered we'd deep-import only the SignMessageLib asset JSON instead.
 
@@ -65,6 +66,9 @@ So the app doesn't pretend to choose the path. It **explains the rule, points at
 ```bash
 yarn install
 yarn dev          # http://localhost:3000
+yarn lint         # Biome: lint + format check (no writes)
+yarn lint:fix     # apply safe lint fixes + format
+yarn format       # format only
 ```
 
 Then in the Safe Wallet UI:
@@ -169,7 +173,7 @@ Hardened per the company JS/TS supply-chain RFC (Yarn v4 path):
 - **Dependabot** ([`.github/dependabot.yml`](.github/dependabot.yml)) updates npm + actions weekly, with a 7-day cooldown aligned to the age gate.
 - No secrets in the repo (`.env` is gitignored; the app holds no keys).
 
-Deploy-time security headers ship in [`public/_headers`](public/_headers) (see [Deployment](#deployment)). Still to apply: enable **branch protection on `main`** with required PR review.
+Deploy-time security headers ship in [`public/_headers`](public/_headers) (see [Deployment](#deployment)). **Branch protection on `main`** is enabled: a PR is required to merge, the `build` and CodeQL checks must pass (branch up to date), commits must be signed, and force-pushes/deletions are blocked.
 
 ## Deployment
 
