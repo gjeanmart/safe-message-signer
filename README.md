@@ -1,5 +1,7 @@
 # safe-message-signer
 
+**Live:** <https://safe-message-signer.ethdevelopers.com>
+
 A **Safe App** (runs inside the Safe{Wallet} UI) for signing arbitrary messages from a Safe — one message, signed either **off-chain** (EIP-1271 SafeMessage) or **on-chain** (`SignMessageLib`), with the Wallet deciding which.
 
 Built to investigate the SignMessageLib UX gap for signing arbitrary messages on-chain from a Safe. The investigation produced a more nuanced picture than "the Transaction Builder can't do delegatecalls": on-chain _message_ signing already works through the Wallet, while _arbitrary_ delegatecall proposing is what's genuinely blocked at the SDK layer. See [What it does](#what-it-does) for the findings, and [CLAUDE.md](CLAUDE.md) for the working model.
