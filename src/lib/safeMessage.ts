@@ -130,7 +130,7 @@ export function computeSafeMessageHash(
  * @param types - The EIP-712 type map (without `EIP712Domain`).
  * @returns The inferred primary type name, or `undefined` if ambiguous.
  */
-function inferPrimaryType(types: TypeMap): string | undefined {
+export function inferPrimaryType(types: TypeMap): string | undefined {
   const names = Object.keys(types);
   const referenced = new Set<string>();
   for (const fields of Object.values(types)) {
