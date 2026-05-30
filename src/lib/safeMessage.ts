@@ -18,18 +18,18 @@
  * from ethers to viem.
  */
 
+import type { EIP712TypedData } from "@safe-global/safe-apps-sdk";
 import {
-  hashMessage,
-  hashTypedData,
   type Address,
   type Hex,
+  hashMessage,
+  hashTypedData,
   type TypedDataDomain,
-} from 'viem'
-import type { EIP712TypedData } from '@safe-global/safe-apps-sdk'
+} from "viem";
 
 /** Loose shape of an EIP-712 type entry, matching the SDK's TypedDataTypes. */
-type TypeEntry = { name: string; type: string }
-type TypeMap = Record<string, TypeEntry[]>
+type TypeEntry = { name: string; type: string };
+type TypeMap = Record<string, TypeEntry[]>;
 
 /**
  * Computes the inner `message` hash that goes into the SafeMessage envelope.
@@ -38,8 +38,12 @@ type TypeMap = Record<string, TypeEntry[]>
  * @param message - Plain text, or an EIP-712 typed-data object.
  * @returns The 32-byte inner hash.
  */
-export function generateSafeMessageMessage(message: string | EIP712TypedData): Hex {
-  return typeof message === 'string' ? hashMessage(message) : hashTypedDataMessage(message)
+export function generateSafeMessageMessage(
+  message: string | EIP712TypedData,
+): Hex {
+  return typeof message === "string"
+    ? hashMessage(message)
+    : hashTypedDataMessage(message);
 }
 
 /**
@@ -55,12 +59,14 @@ export function hashTypedDataMessage(typedData: EIP712TypedData): Hex {
   // viem (like ethers) derives the EIP712Domain type from `domain`, so strip
   // any explicit EIP712Domain entry the caller may have included.
   const { EIP712Domain: _drop, ...types } = typedData.types as TypeMap & {
-    EIP712Domain?: TypeEntry[]
-  }
+    EIP712Domain?: TypeEntry[];
+  };
 
-  const primaryType = typedData.primaryType ?? inferPrimaryType(types)
+  const primaryType = typedData.primaryType ?? inferPrimaryType(types);
   if (!primaryType) {
-    throw new Error('Could not determine primaryType — add a "primaryType" field to the typed data.')
+    throw new Error(
+      'Could not determine primaryType — add a "primaryType" field to the typed data.',
+    );
   }
 
   return hashTypedData({
@@ -68,7 +74,7 @@ export function hashTypedDataMessage(typedData: EIP712TypedData): Hex {
     types: types as Record<string, TypeEntry[]>,
     primaryType,
     message: typedData.message,
-  })
+  });
 }
 
 /**
@@ -88,10 +94,10 @@ export function generateSafeMessageTypedData(
 ): EIP712TypedData {
   return {
     domain: { chainId, verifyingContract: safeAddress },
-    types: { SafeMessage: [{ name: 'message', type: 'bytes' }] },
-    primaryType: 'SafeMessage',
+    types: { SafeMessage: [{ name: "message", type: "bytes" }] },
+    primaryType: "SafeMessage",
     message: { message: generateSafeMessageMessage(message) },
-  }
+  };
 }
 
 /**
@@ -111,10 +117,10 @@ export function computeSafeMessageHash(
 ): Hex {
   return hashTypedData({
     domain: { chainId, verifyingContract: safeAddress },
-    types: { SafeMessage: [{ name: 'message', type: 'bytes' }] },
-    primaryType: 'SafeMessage',
+    types: { SafeMessage: [{ name: "message", type: "bytes" }] },
+    primaryType: "SafeMessage",
     message: { message: generateSafeMessageMessage(message) },
-  })
+  });
 }
 
 /**
@@ -125,15 +131,15 @@ export function computeSafeMessageHash(
  * @returns The inferred primary type name, or `undefined` if ambiguous.
  */
 function inferPrimaryType(types: TypeMap): string | undefined {
-  const names = Object.keys(types)
-  const referenced = new Set<string>()
+  const names = Object.keys(types);
+  const referenced = new Set<string>();
   for (const fields of Object.values(types)) {
     for (const f of fields) {
-      const base = f.type.replace(/\[\d*\]$/, '') // strip array suffix
-      if (names.includes(base)) referenced.add(base)
+      const base = f.type.replace(/\[\d*\]$/, ""); // strip array suffix
+      if (names.includes(base)) referenced.add(base);
     }
   }
-  return names.find((n) => !referenced.has(n))
+  return names.find((n) => !referenced.has(n));
 }
 
 /**
@@ -151,53 +157,53 @@ export function getExampleTypedData(
   testString: string,
 ): EIP712TypedData {
   const pad = (hex: string, bytes: number): Hex =>
-    `0x${hex.replace(/^0x/, '').padStart(bytes * 2, '0')}` as Hex
+    `0x${hex.replace(/^0x/, "").padStart(bytes * 2, "0")}` as Hex;
 
   const nested = {
     nestedString: testString,
-    nestedAddress: pad('0x2', 20),
-    nestedUint256: '0',
-    nestedUint32: '1',
-    nestedBytes32: pad('0xda7a', 32),
+    nestedAddress: pad("0x2", 20),
+    nestedUint256: "0",
+    nestedUint32: "1",
+    nestedBytes32: pad("0xda7a", 32),
     nestedBoolean: false,
-  }
+  };
 
   return {
     types: {
       Nested: [
-        { name: 'nestedString', type: 'string' },
-        { name: 'nestedAddress', type: 'address' },
-        { name: 'nestedUint256', type: 'uint256' },
-        { name: 'nestedUint32', type: 'uint32' },
-        { name: 'nestedBytes32', type: 'bytes32' },
-        { name: 'nestedBoolean', type: 'bool' },
+        { name: "nestedString", type: "string" },
+        { name: "nestedAddress", type: "address" },
+        { name: "nestedUint256", type: "uint256" },
+        { name: "nestedUint32", type: "uint32" },
+        { name: "nestedBytes32", type: "bytes32" },
+        { name: "nestedBoolean", type: "bool" },
       ],
       Example: [
-        { name: 'testString', type: 'string' },
-        { name: 'testAddress', type: 'address' },
-        { name: 'testUint256', type: 'uint256' },
-        { name: 'testBytes32', type: 'bytes32' },
-        { name: 'testBoolean', type: 'bool' },
-        { name: 'testNested', type: 'Nested' },
-        { name: 'testNestedArray', type: 'Nested[]' },
+        { name: "testString", type: "string" },
+        { name: "testAddress", type: "address" },
+        { name: "testUint256", type: "uint256" },
+        { name: "testBytes32", type: "bytes32" },
+        { name: "testBoolean", type: "bool" },
+        { name: "testNested", type: "Nested" },
+        { name: "testNestedArray", type: "Nested[]" },
       ],
     },
     domain: {
-      name: 'Safe Message Signer Example',
-      version: '1.0',
+      name: "Safe Message Signer Example",
+      version: "1.0",
       chainId,
       verifyingContract,
     },
-    primaryType: 'Example',
+    primaryType: "Example",
     message: {
       testString,
       testAddress: verifyingContract,
       testUint256:
-        '115792089237316195423570985008687907853269984665640564039457584007908834671663',
-      testBytes32: pad('0xdeadbeef', 32),
+        "115792089237316195423570985008687907853269984665640564039457584007908834671663",
+      testBytes32: pad("0xdeadbeef", 32),
       testBoolean: true,
       testNested: nested,
       testNestedArray: [nested, nested],
     },
-  }
+  };
 }

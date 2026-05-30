@@ -28,12 +28,15 @@ It started as an experiment to close the SignMessageLib UX gap for on-chain mess
 
 ```bash
 yarn install
-yarn dev            # Vite dev server on http://localhost:3000 (host:true, ngrok hosts allowed)
+yarn dev            # Vite dev server on http://localhost:3000 (host:true)
 yarn build          # tsc --noEmit equivalent runs in build; produces dist/
 yarn tsc --noEmit   # typecheck only
+yarn lint           # Biome: lint + format check (no writes)
+yarn lint:fix       # apply safe lint fixes + format
+yarn format         # format only
 ```
 
-There is **no test suite** (see "Practices not applied"). After any change to signing/hashing, run `yarn tsc --noEmit && yarn build` and, ideally, sign once inside a real Safe.
+There is **no test suite** (see "Practices not applied"). After any change to signing/hashing, run `yarn tsc --noEmit && yarn build` and, ideally, sign once inside a real Safe. Run `yarn lint` before pushing — CI enforces Biome (the `lint` job runs `biome ci`).
 
 ### Running inside the Wallet
 
@@ -78,6 +81,7 @@ Hashing is split deliberately: `safeMessage.ts` owns *what gets hashed* (off-cha
 
 - **JSDoc on every export.** Document each exported function, component, and hook with a `/** … */` JSDoc block using `@param` and `@returns` tags (for a React component, `@param` documents its props). Module-level files start with a `/** … */` header describing the file. JSDoc says *what it is / how to call it*; keep the inline `//` comments for the *why* (protocol findings, gotchas). Non-exported trivial helpers don't need full tags, but a one-line `/** */` is welcome.
 - **TypeScript strict** (`tsconfig.json`). `noUnusedLocals` is off intentionally (keeps WIP edits frictionless), so the IDE hints—not the build—catch dead code; clean it up anyway.
+- **Biome for lint + format** (`biome.json`: 2-space, double quotes, 80 cols, recommended rules). Run `yarn lint:fix` before committing. Suppress a rule only with a single-line `// biome-ignore lint/<rule>: <reason>` placed *directly* above the offending line (a multi-line comment breaks adjacency), and explain the why in preceding comments — see the handshake effect in `useSafeAppsSdk.ts`.
 - **viem for everything eth** — hashing (`hashMessage`, `hashTypedData`), ABI encoding (`encodeFunctionData`), address utils (`getAddress`, `isAddress`, `zeroAddress`). Do not add ethers.
 - **No hardcoded addresses or ABIs.** SignMessageLib address *and* ABI come from `@safe-global/safe-deployments`, keyed by chain id and Safe version. If you need another Safe contract, get it from there too.
 - **Document the "why" inline.** This codebase carries protocol findings in file headers and comments (the gates, the SDK delegatecall gap, hashing rules). When you discover or rely on a non-obvious protocol detail, write it down next to the code, with a source pointer (repo + file).
@@ -131,6 +135,8 @@ Why the app looks the way it does — the questions explored and the choices mad
 12. **Supply-chain hardening (per the company JS/TS RFC, Yarn v4 path).** `.yarnrc.yml`: `enableScripts: false` (only `esbuild` allowlisted via package.json `dependenciesMeta` — it's the sole dep with an install script), `enableHardenedMode: true`, `npmMinimalAgeGate: 10080`. Added CI (`yarn install --immutable` → typecheck → build), CodeQL, and OpenSSF Scorecard workflows — **all GitHub Actions pinned to commit SHAs**, least-privilege `permissions`. Added Dependabot (npm + actions, 7-day cooldown), MIT `LICENSE`, and `engines`. Removed the unused `@safe-global/safe-apps-provider` dependency (smaller attack surface). Branch protection on `main` is to be enabled after the first push.
 
 13. **Deploy via Cloudflare Pages' GitHub integration, not GitHub Actions.** Push to `main` → CF builds (`yarn build` → `dist/`) and deploys to `safe-message-signer.ethdevelopers.com`. Chose the native Git integration over a `wrangler` Actions workflow for simplicity: no `CLOUDFLARE_*` secrets in the repo, and CF still honours the `.yarnrc.yml` hardening since it runs the in-repo Yarn. Production/`main` only — PR previews intentionally off. HTTP headers (manifest CORS + `frame-ancestors https://*.safe.global` + hardening) live in [`public/_headers`](public/_headers); CF Pages reads that file. Build config (command/output/branch/`NODE_VERSION`) is set in the Pages dashboard, not in-repo.
+
+14. **Adopted Biome (lint + format), wired into CI.** Chose Biome over ESLint + Prettier: one dependency with platform binaries as optional deps (no install scripts — fits `enableScripts: false`), one config, no plugin sprawl. Formatter tuned to the existing style (2-space, double quotes, 80 cols). Fixed the findings instead of disabling rules: explicit `type="button"` on all buttons (a11y), a null-check replacing the `#root` non-null assertion, and a documented single-line `biome-ignore` for the run-once handshake effect's exhaustive-deps (the stale `eslint-disable` it replaced was dead — we never ran ESLint). CI gained a `lint` job running `biome ci`.
 
 ### Background discussion (not yet built)
 

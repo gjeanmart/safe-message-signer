@@ -9,17 +9,17 @@
  * notice instead of a confusing blank state.
  */
 
-import { useEffect, useMemo, useState } from 'react'
-import SafeAppsSDK, { type SafeInfoExtended } from '@safe-global/safe-apps-sdk'
+import SafeAppsSDK, { type SafeInfoExtended } from "@safe-global/safe-apps-sdk";
+import { useEffect, useMemo, useState } from "react";
 
 export type SafeAppContext = {
-  sdk: SafeAppsSDK
+  sdk: SafeAppsSDK;
   // SafeInfoExtended adds version + fallbackHandler, which we need to detect
   // whether off-chain EIP-1271 signing is even possible for this Safe.
-  safe: SafeInfoExtended | undefined
-  isStandalone: boolean
-  isLoading: boolean
-}
+  safe: SafeInfoExtended | undefined;
+  isStandalone: boolean;
+  isLoading: boolean;
+};
 
 /**
  * React hook that initialises the Safe Apps SDK and performs the handshake with
@@ -40,44 +40,50 @@ export function useSafeAppsSdk(): SafeAppContext {
         debug: false,
       }),
     [],
-  )
+  );
 
-  const [safe, setSafe] = useState<SafeInfoExtended | undefined>(undefined)
-  const [isLoading, setIsLoading] = useState(true)
-  const [isStandalone, setIsStandalone] = useState(false)
+  const [safe, setSafe] = useState<SafeInfoExtended | undefined>(undefined);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isStandalone, setIsStandalone] = useState(false);
 
+  // The handshake must run once per `sdk`. `safe` is read inside the timeout
+  // only to check whether the handshake has resolved yet; adding it as a
+  // dependency would reset the standalone timer every time the Safe loads.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: run-once handshake (see note above).
   useEffect(() => {
-    let cancelled = false
+    let cancelled = false;
 
     // Race the SDK handshake against a short timeout so we can distinguish
     // "loaded inside Safe Wallet" from "loaded standalone" without hanging.
     const handshake = sdk.safe
       .getInfo()
       .then((info) => {
-        if (cancelled) return
-        setSafe(info)
-        setIsLoading(false)
+        if (cancelled) return;
+        setSafe(info);
+        setIsLoading(false);
       })
       .catch((err) => {
         // The SDK throws if no parent Safe Wallet is detected
-        console.warn('[safe-message-signer] Safe Apps SDK handshake failed:', err)
-      })
+        console.warn(
+          "[safe-message-signer] Safe Apps SDK handshake failed:",
+          err,
+        );
+      });
 
     const timeout = setTimeout(() => {
-      if (cancelled) return
+      if (cancelled) return;
       if (!safe) {
-        setIsStandalone(true)
-        setIsLoading(false)
+        setIsStandalone(true);
+        setIsLoading(false);
       }
-    }, 2500)
+    }, 2500);
 
     return () => {
-      cancelled = true
-      clearTimeout(timeout)
-      void handshake
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sdk])
+      cancelled = true;
+      clearTimeout(timeout);
+      void handshake;
+    };
+  }, [sdk]);
 
-  return { sdk, safe, isStandalone, isLoading }
+  return { sdk, safe, isStandalone, isLoading };
 }

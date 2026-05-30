@@ -1,5 +1,7 @@
 :root {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif;
   font-size: 14px;
   color: #121312;
   background: #f7f8fa;
@@ -67,7 +69,7 @@ h2 {
 
 .tab.active {
   color: #121312;
-  border-bottom-color: #12FF80;
+  border-bottom-color: #12ff80;
   font-weight: 600;
 }
 
@@ -95,9 +97,10 @@ h2 {
 }
 
 textarea,
-input[type='text'] {
+input[type="text"] {
   width: 100%;
-  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+  font-family:
+    ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   font-size: 13px;
   border: 1px solid #d3d5d8;
   border-radius: 6px;
@@ -112,14 +115,14 @@ textarea {
 }
 
 textarea:focus,
-input[type='text']:focus {
+input[type="text"]:focus {
   outline: none;
-  border-color: #12FF80;
+  border-color: #12ff80;
   background: #fff;
 }
 
 button.primary {
-  background: #12FF80;
+  background: #12ff80;
   color: #121312;
   border: 0;
   padding: 10px 18px;
@@ -150,13 +153,14 @@ button.secondary {
   grid-template-columns: 160px 1fr;
   gap: 8px 16px;
   font-size: 13px;
-  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+  font-family:
+    ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   word-break: break-all;
 }
 
 .kv dt {
   color: #636669;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
@@ -223,11 +227,11 @@ a {
 }
 
 .copy-btn:hover {
-  border-color: #12FF80;
+  border-color: #12ff80;
   color: #121312;
 }
 
 .copy-btn.copied {
-  border-color: #12FF80;
+  border-color: #12ff80;
   color: #0a8a45;
 }
