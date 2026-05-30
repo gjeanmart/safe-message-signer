@@ -1,0 +1,26 @@
+version: 2
+updates:
+  # SHA rotation for pinned actions (pairs with SHA-pinning in workflows).
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+    open-pull-requests-limit: 10
+
+  - package-ecosystem: 'npm'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+    open-pull-requests-limit: 10
+    # Aligns with npmMinimalAgeGate (10080 min) — don't propose versions Yarn would block.
+    cooldown:
+      default-days: 7
+    groups:
+      react:
+        patterns: ['react', 'react-dom', '@types/react', '@types/react-dom']
+        update-types: ['minor', 'patch']
+      build-toolchain:
+        patterns: ['typescript', 'vite', '@vitejs/*', '@types/*']
+        update-types: ['minor', 'patch']

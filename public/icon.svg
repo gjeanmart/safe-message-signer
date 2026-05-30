@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <rect width="64" height="64" rx="12" fill="#12FF80"/>
+  <g transform="translate(13 13) scale(1.58)" fill="none" stroke="#121312"
+     stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <!-- pen drawing a line: a "sign here" mark -->
+    <path d="M12 20h9" />
+    <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+  </g>
+</svg>
