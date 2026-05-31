@@ -42,6 +42,12 @@ import {
   encodeSignMessageCall,
   getSignMessageLibAddress,
 } from "../lib/signMessageLib";
+import {
+  isValidSignatureInput,
+  normalizeSignature,
+  type VerifyResult,
+  verifyMessageSignature,
+} from "../lib/verify";
 import { Copyable } from "./Copyable";
 
 type Mode = "text" | "typed";
@@ -103,6 +109,12 @@ export function SignMessage({ ctx }: { ctx: SafeAppContext }) {
   // its modal is opened without an onClose handler — so the SDK promise can
   // hang forever), we bump the seq and ignore any late resolution.
   const signSeq = useRef(0);
+
+  // Verify panel state (EIP-1271 signature verification).
+  const [signatureInput, setSignatureInput] = useState("");
+  const [verifying, setVerifying] = useState(false);
+  const [verifyResult, setVerifyResult] = useState<VerifyResult | null>(null);
+  const [verifyError, setVerifyError] = useState<string | null>(null);
 
   const typed = useMemo(() => {
     if (mode !== "typed" || !typedJson.trim()) {
@@ -178,6 +190,8 @@ export function SignMessage({ ctx }: { ctx: SafeAppContext }) {
   const reset = () => {
     setResult(null);
     setError(null);
+    setVerifyResult(null);
+    setVerifyError(null);
   };
 
   const loadExample = () => {
@@ -234,6 +248,28 @@ export function SignMessage({ ctx }: { ctx: SafeAppContext }) {
   };
 
   const canSubmit = !!safe && !submitting && !!payload;
+
+  const onVerify = async () => {
+    if (!safe || !payload) return;
+    setVerifying(true);
+    setVerifyResult(null);
+    setVerifyError(null);
+    try {
+      const res = await verifyMessageSignature(
+        sdk,
+        payload,
+        normalizeSignature(signatureInput),
+      );
+      setVerifyResult(res);
+    } catch (e) {
+      setVerifyError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const canVerify =
+    !!safe && !!payload && !verifying && isValidSignatureInput(signatureInput);
 
   return (
     <div className="card">
@@ -486,6 +522,77 @@ export function SignMessage({ ctx }: { ctx: SafeAppContext }) {
       {error && (
         <div className="callout error" style={{ marginTop: 16 }}>
           {error}
+        </div>
+      )}
+
+      {safe && payload && (
+        <div
+          style={{
+            marginTop: 24,
+            borderTop: "1px solid #e0e3e7",
+            paddingTop: 16,
+          }}
+        >
+          <h2 style={{ marginBottom: 4 }}>Verify a signature</h2>
+          <p className="subtitle" style={{ marginBottom: 12 }}>
+            Check whether this Safe considers the message above signed
+            (EIP-1271, magic value <code>0x1626ba7e</code>). Leave the signature
+            blank to check the <strong>on-chain</strong> state (set by
+            SignMessageLib); paste a signature — e.g. an off-chain SafeMessage's
+            prepared signature — to verify that specific one.
+          </p>
+          <div className="field">
+            <label htmlFor="sig">Signature (optional)</label>
+            <input
+              id="sig"
+              type="text"
+              value={signatureInput}
+              placeholder="0x… (blank = on-chain check)"
+              onChange={(e) => {
+                setSignatureInput(e.target.value);
+                setVerifyResult(null);
+                setVerifyError(null);
+              }}
+            />
+          </div>
+          <button
+            type="button"
+            className="secondary"
+            onClick={onVerify}
+            disabled={!canVerify}
+          >
+            {verifying ? "Verifying…" : "Verify signature"}
+          </button>
+          {signatureInput.trim() !== "" &&
+            !isValidSignatureInput(signatureInput) && (
+              <div className="callout error" style={{ marginTop: 8 }}>
+                Signature must be a 0x-prefixed hex string (or blank for an
+                on-chain check).
+              </div>
+            )}
+          {verifyResult && (
+            <div
+              className={`callout ${verifyResult.valid ? "success" : "error"}`}
+              style={{ marginTop: 12 }}
+            >
+              {verifyResult.valid ? (
+                <strong>✓ Valid — this Safe has signed the message.</strong>
+              ) : (
+                <strong>
+                  ✗ Not signed — the Safe does not recognise this message as
+                  signed
+                  {verifyResult.signature === "0x"
+                    ? " on-chain."
+                    : " by that signature."}
+                </strong>
+              )}
+            </div>
+          )}
+          {verifyError && (
+            <div className="callout error" style={{ marginTop: 12 }}>
+              {verifyError}
+            </div>
+          )}
         </div>
       )}
     </div>
