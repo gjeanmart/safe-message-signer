@@ -37,7 +37,7 @@ This app provides a UI for that flow through the Safe Apps SDK — and, along th
 - **Off-chain** → an EIP-1271 SafeMessage via the tx-service `/messages/` endpoint.
 - **On-chain** → a `SignMessageLib` delegatecall transaction (replay protection from the Safe nonce).
 
-The app reports which path the Wallet took (`messageHash` = off-chain, `safeTxHash` = on-chain).
+The app reports which path the Wallet took (`messageHash` = off-chain, `safeTxHash` = on-chain). A **Verify a signature** panel below then checks, via EIP-1271, whether the Safe considers the message signed — the on-chain state by default, or a specific signature you paste.
 
 ### Why there's no app-side "off-chain vs on-chain" switch
 
@@ -106,13 +106,15 @@ src/
     offchain.ts         ← isOffchainSigningSupported (mirrors the Wallet's capability gate)
     eip712.ts           ← structural validation of pasted EIP-712 typed data
     eip712.test.ts      ← Vitest unit tests for the validator
+    verify.ts           ← EIP-1271 signature verification (sdk.safe.isMessageSigned wrapper)
+    verify.test.ts      ← Vitest unit tests for the signature-input helpers
 ```
 
 See [CLAUDE.md](CLAUDE.md) for conventions, the signing model, and the findings that shaped the design.
 
 ## Verifying a signature after execution
 
-For an on-chain signature, the message is valid once the multisig tx executes. To verify:
+The app has a built-in **Verify a signature** panel: it calls the SDK's `isMessageSigned` (which `eth_call`s `isValidSignature` via the Wallet's RPC) for the message in the editor — blank signature checks the on-chain state, or paste a signature to verify a specific one. To verify the same thing yourself with viem:
 
 ```ts
 import { createPublicClient, http } from "viem";
@@ -152,12 +154,13 @@ console.log(result === MAGIC_VALUE); // true
 - [x] Capability detection: disables/warns when off-chain isn't supported for the Safe
 - [x] Copy-to-clipboard for hashes / target / calldata
 - [x] Recovery from the Wallet's hung on-chain cancel (sequence token + Cancel button)
+- [x] In-app signature verification (EIP-1271 `isValidSignature` — on-chain state, or a pasted signature)
 - [x] Verified on Sepolia (off-chain and on-chain routing)
 - [ ] Demo recording / screenshots
 
 ## Out of scope for v0 (later)
 
-- In-app verification step (read `isValidSignature` after execution) — the SDK's `isMessageHashSigned` could drive this
+- Auto-fetching the off-chain `preparedSignature` from the tx-service for one-click off-chain verification — today the Verify panel checks the on-chain state by default, and you paste a signature to verify an off-chain one
 
 ## Findings to file (upstream follow-ups)
 
