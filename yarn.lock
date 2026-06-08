@@ -1787,6 +1787,27 @@ __metadata:
   languageName: node
   linkType: hard
 
+"ox@npm:0.14.27":
+  version: 0.14.27
+  resolution: "ox@npm:0.14.27"
+  dependencies:
+    "@adraffy/ens-normalize": "npm:^1.11.0"
+    "@noble/ciphers": "npm:^1.3.0"
+    "@noble/curves": "npm:1.9.1"
+    "@noble/hashes": "npm:^1.8.0"
+    "@scure/bip32": "npm:^1.7.0"
+    "@scure/bip39": "npm:^1.6.0"
+    abitype: "npm:^1.2.3"
+    eventemitter3: "npm:5.0.1"
+  peerDependencies:
+    typescript: ">=5.4.0"
+  peerDependenciesMeta:
+    typescript:
+      optional: true
+  checksum: 10c0/eafa713c459de2f614df9ff6231b7d04d425cd6297b6988e6ad981e97fdfdf55ffa3dbd43db7796a31d0384c0fbc5ed1e5028b43fedd0fbcaad29949f38adc7d
+  languageName: node
+  linkType: hard
+
 "pathe@npm:^2.0.3":
   version: 2.0.3
   resolution: "pathe@npm:2.0.3"
@@ -2015,7 +2036,7 @@ __metadata:
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     typescript: "npm:^5.5.3"
-    viem: "npm:^2.21.0"
+    viem: "npm:^2.52.0"
     vite: "npm:^6.0.0"
     vitest: "npm:^4.1.7"
   dependenciesMeta:
@@ -2171,7 +2192,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"viem@npm:^2.1.1, viem@npm:^2.21.0":
+"viem@npm:^2.1.1":
   version: 2.51.3
   resolution: "viem@npm:2.51.3"
   dependencies:
@@ -2189,6 +2210,27 @@ __metadata:
     typescript:
       optional: true
   checksum: 10c0/df7947adf57fe812a8937e420f6ba799f1ed09eccf6a3595c7139f4376bb91f5863d358e9d0252503158a08fd420e0ea1cc61fd9bf66e5a03909ac1bea43de05
+  languageName: node
+  linkType: hard
+
+"viem@npm:^2.52.0":
+  version: 2.52.0
+  resolution: "viem@npm:2.52.0"
+  dependencies:
+    "@noble/curves": "npm:1.9.1"
+    "@noble/hashes": "npm:1.8.0"
+    "@scure/bip32": "npm:1.7.0"
+    "@scure/bip39": "npm:1.6.0"
+    abitype: "npm:1.2.3"
+    isows: "npm:1.0.7"
+    ox: "npm:0.14.27"
+    ws: "npm:8.20.1"
+  peerDependencies:
+    typescript: ">=5.0.4"
+  peerDependenciesMeta:
+    typescript:
+      optional: true
+  checksum: 10c0/4d961dda1eb1eb31592b0e515642e150a785b54508fcffa246539074521b2add8bd94db825b65b176a7ae7f843dd60d3f1af6269f1c3f62d7900c0fd670e8705
   languageName: node
   linkType: hard
 
